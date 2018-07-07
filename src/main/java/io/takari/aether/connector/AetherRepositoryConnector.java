@@ -419,6 +419,7 @@ class AetherRepositoryConnector implements RepositoryConnector {
 
       try {
         transferInitiated(download, newEvent(transferResource, RequestType.GET, EventType.INITIATED).build());
+        log("Initialized transfer for  " + uri);
 
         // Aether sends a request to the connector for the content to retrieve from a given URL and the file on the local file system
         // to populate with the downloaded content. It is up to the connector to prevent collisions of multiple processes downloading
@@ -450,6 +451,7 @@ class AetherRepositoryConnector implements RepositoryConnector {
           return;
         }
 
+        log("Getting " + uri);
         FileTransfer temporaryFileInLocalRepository = resumableGet(uri, fileInLocalRepository, transferResource, RequestType.GET, true);
 
         //
@@ -457,16 +459,22 @@ class AetherRepositoryConnector implements RepositoryConnector {
         // like checksum validation and signature validation. We will only move the temporary file over
         // to the realFile if all the validations are successful.
         //
+        log("Validating checksum for " + temporaryFileInLocalRepository.file.getName());
         validateChecksums(temporaryFileInLocalRepository.file, fileInLocalRepository, uri, transferResource);
 
         //
         // Only if the checksum handling succeeds will the temporary file be moved to the real file. The contents of the file are not
         // available if there is a checksum handling failure.
         //
+        log("Checksum ok, renaming " + temporaryFileInLocalRepository.file.getName());
         rename(temporaryFileInLocalRepository.file, fileInLocalRepository);
 
+        log("Checksum after renaming " + ChecksumUtils.calc(fileInLocalRepository, checksumAlgos.keySet()));
+        
+        
         transferSucceeded(download, newEvent(transferResource, RequestType.GET, EventType.SUCCEEDED).setTransferredBytes(temporaryFileInLocalRepository.bytesTransferred).build());
       } catch (Throwable t) {
+        log("Caught exception " + t);
         if (Exception.class.isAssignableFrom(t.getClass())) {
           exception = Exception.class.cast(t);
         } else {
@@ -477,6 +485,10 @@ class AetherRepositoryConnector implements RepositoryConnector {
         latch.countDown();
       }
     }
+
+	private void log(String data) {
+		System.out.println(Thread.currentThread().getName() + " [ " + System.currentTimeMillis() + " ] " +  " - " + data);
+	}
 
     class FileTransfer {
       FileTransfer(File file, long bytesTransferred) {
@@ -506,6 +518,7 @@ class AetherRepositoryConnector implements RepositoryConnector {
           throw new ChecksumFailureException("Checksum validation failed" + ", no checksums available from the repository");
         }
       } catch (Exception e) {
+    	 log("Invalid checksum" + e);
         transferCorrupted(download, newEvent(transferResource, e, RequestType.GET, EventType.CORRUPTED).build());
         if (failOnInvalidOrMissingCheckums) {
           transferFailed(download, newEvent(transferResource, e, RequestType.GET, EventType.FAILED).build());
@@ -537,6 +550,7 @@ class AetherRepositoryConnector implements RepositoryConnector {
   
           FileTransfer temporaryChecksumFile = resumableGet(checksumUri, checksumFileInLocalRepository, transferResource, RequestType.GET, false);
           String expected = ChecksumUtils.read(temporaryChecksumFile.file);
+          log("Checksum for " + temporaryFileInLocalRepository.getName() + " is (expected , actual) " + expected + " , " + actual);
           if (!expected.equalsIgnoreCase(actual)) {
             throw new ChecksumFailureException(expected, actual);
           }
@@ -574,12 +588,15 @@ class AetherRepositoryConnector implements RepositoryConnector {
           if (inProgress.getName().startsWith("aether") && inProgress.getName().endsWith(fileInLocalRepository.getName() + "-in-progress")) {
             temporaryFileInLocalRepository = inProgress;
             resumeDownloadInProgress = true;
+            log("Found tmp aether file " + inProgress.getName());
+            log("Starting download from (bytes) " + temporaryFileInLocalRepository.length());
             break;
           }
         }
 
         if (temporaryFileInLocalRepository == null) {
           temporaryFileInLocalRepository = getTmpFile(fileInLocalRepository.getPath());
+          log("Created tmp file " + temporaryFileInLocalRepository.getName());
         }
 
         //JVZ: this all needs to be moved up to the client
@@ -606,6 +623,7 @@ class AetherRepositoryConnector implements RepositoryConnector {
           // The server does not support ranges so delete the temporary file and start over.
           //
           temporaryFileInLocalRepository.delete();
+          log("Removed tmp file due to unable to handle " + temporaryFileInLocalRepository.getName());
         }
 
         if (emitProgressEvent) {
@@ -627,16 +645,19 @@ class AetherRepositoryConnector implements RepositoryConnector {
                 transferProgressed(download, newEvent(transferResource, null, requestType, EventType.PROGRESSED).setTransferredBytes(n).setDataBuffer(buffer, 0, n).build());
               }
               bytesTransferred = bytesTransferred + n;
+              log("Transferring... " + temporaryFileInLocalRepository.getName() + " " + bytesTransferred);
             }
             //
             // No interruptions in the download so we have transferred all the bytes
             //
+            log("Download done for " + temporaryFileInLocalRepository.getName());
             downloadSuccessful = true;
           } catch (IOException e) {
             throw e;
           }
 
         } catch (IOException e) {
+            log("Caught exception " + uri + " : " + e);
           exception = e;
         } finally {
           if (downloadSuccessful) {
