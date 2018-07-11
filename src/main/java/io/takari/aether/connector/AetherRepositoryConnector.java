@@ -188,14 +188,9 @@ class AetherRepositoryConnector implements RepositoryConnector {
       throw new NoRepositoryConnectorException(repository, e);
     }
 
-//    this.aetherClient = newAetherClient(repository, session, sslSocketFactory);
+    this.aetherClient = newAetherClient(repository, session, sslSocketFactory);
   }
   
-  // for testing
-  void setAetherClient(AetherClient aetherClient) {
-    this.aetherClient = aetherClient;
-}
-
   private static OkHttpAetherClient newAetherClient(RemoteRepository repository, RepositorySystemSession session,
       SSLSocketFactory sslSocketFactory) {
     AetherClientConfig config = new AetherClientConfig();
@@ -867,7 +862,6 @@ class AetherRepositoryConnector implements RepositoryConnector {
     if (transfer.getListener() != null) {
       transfer.getListener().transferFailed(event);
     }
-    throw new RuntimeException("Checksum failure");
   }
 
   protected void transferStarted(Transfer transfer, TransferEvent event) throws TransferCancelledException {
