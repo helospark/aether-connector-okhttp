@@ -22,6 +22,7 @@ import org.eclipse.aether.repository.RepositoryPolicy;
 import org.eclipse.aether.spi.connector.ArtifactDownload;
 import org.eclipse.aether.spi.connector.RepositoryConnector;
 import org.eclipse.aether.spi.connector.RepositoryConnectorFactory;
+import org.eclipse.aether.transfer.ArtifactTransferException;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
@@ -76,7 +77,7 @@ public class GetResumeTest extends InjectedTestCase {
     }
   }
 
-  public void testResumingDownloadsWhereTheServerDropsTheConnectionAndSupportsRanges() throws Exception {
+  public void testDownloadWhenServerCannotSatisfyDownloadWithoutRangesWillResultInException() throws Exception {
     
     artifact = new DefaultArtifact("gid", "aid", "classifier", "extension", "version");
 
@@ -100,10 +101,7 @@ public class GetResumeTest extends InjectedTestCase {
       connector.close();
     }
 
-    assertNull(String.valueOf(download.getException()), download.getException());
-    assertTrue("Missing " + file.getAbsolutePath(), file.isFile());
-    assertEquals("Bad size of " + file.getAbsolutePath(), flakyHandler.totalSize, file.length());
-    assertContentPattern(file);
+    assertEquals("No exception resulted from downloading from bad server", download.getException().getClass(), ArtifactTransferException.class);
   }
  
   public void testResumingDownloadsWhereTheServerDropsTheConnectionAndDoesNotSupportsRanges() throws Exception {

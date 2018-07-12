@@ -32,7 +32,7 @@ import org.eclipse.aether.util.ChecksumUtils;
 import com.google.inject.Binder;
 
 public class ConcurrentDownloadTest extends AetherTestCase {
-	private static final String EXPECTED_CHECKSUM = "7f8527f31177c8c1c51fa356c8da9c4a0ee82787";
+	private static final String EXPECTED_CHECKSUM = "5e7c448331bc03b64ba9308593461c098d2ca501";
 	private static final File TMP = new File(System.getProperty("java.io.tmpdir"), "aether-" + UUID.randomUUID().toString().substring(0, 8));
 
 	@Override
@@ -70,7 +70,7 @@ public class ConcurrentDownloadTest extends AetherTestCase {
 			final Collection<? extends ArtifactDownload> downs) throws InterruptedException {
 		// Create threads
 		List<Thread> threads = new ArrayList<>();
-		for (int i = 0; i < 2; ++i) {
+		for (int i = 0; i < 1; ++i) {
 			threads.add(new Thread(new Runnable() {
 				@Override
 				public void run() {
