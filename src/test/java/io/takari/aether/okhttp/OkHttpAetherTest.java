@@ -10,6 +10,7 @@ package io.takari.aether.okhttp;
 import io.takari.aether.connector.test.mockwebserver.AetherMockWebserverConnectorTest;
 import io.takari.aether.connector.test.suite.AetherConnectorFactoryTest;
 import io.takari.aether.connector.test.suite.AetherConnectorTest;
+import io.takari.aether.connector.test.suite.ConcurrentDownloadTest;
 import io.takari.aether.connector.test.suite.GetAuthSslTest;
 import io.takari.aether.connector.test.suite.GetAuthTest;
 import io.takari.aether.connector.test.suite.GetAuthWithNonAsciiCredentialsTest;
@@ -97,6 +98,7 @@ public class OkHttpAetherTest extends InjectedTestCase {
 
     // bits and pieces
     suite.addTestSuite(AetherConnectorFactoryTest.class);
+    suite.addTestSuite(ConcurrentDownloadTest.class);
 
     return suite;
   }
